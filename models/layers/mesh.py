@@ -21,6 +21,8 @@ class Mesh:
 
     def extract_features(self):
         return self.features
+    def extract_gemm_edges(self):
+        return self.gemm_edges
 
     def merge_vertices(self, edge_id):
         self.remove_edge(edge_id)

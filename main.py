@@ -44,6 +44,15 @@ if __name__ == "__main__":
 
     polydata = reader.GetOutput()
     print(polydata.GetNumberOfPoints())
+
+    edgeExtractor = vtk.vtkExtractEdges()
+    edgeExtractor.SetInputData(polydata)
+    edgeExtractor.Update()
+
+    lines = edgeExtractor.GetOutput().GetLines()
+
+    print("Number of edges : ", lines.GetNumberOfCells())
+
     # #Copute normal
     # normalGenerator = vtk.vtkPolyDataNormals()
     # normalGenerator.SetInputData(polydata)
@@ -69,6 +78,8 @@ if __name__ == "__main__":
     #Import sample mesh
     mesh = Mesh(polydata)
     mesh_feature = mesh.extract_features()
+    mesh_gemm = mesh.extract_gemm_edges()
+    print(mesh_gemm.shape)
     
 
     sample_input = torch.tensor(mesh_feature).unsqueeze(0).float()
