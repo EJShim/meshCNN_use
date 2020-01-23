@@ -44,22 +44,16 @@ if __name__ == "__main__":
 
     polydata = reader.GetOutput()
     print(polydata.GetNumberOfPoints())
-    #Copute normal
-    normalGenerator = vtk.vtkPolyDataNormals()
-    normalGenerator.SetInputData(polydata)
-    normalGenerator.ComputePointNormalsOn()
-    normalGenerator.ComputeCellNormalsOn()
-    normalGenerator.SetSplitting(False)
-    normalGenerator.Update()
-
-    polydata = normalGenerator.GetOutput()
-
-
+    # #Copute normal
+    # normalGenerator = vtk.vtkPolyDataNormals()
+    # normalGenerator.SetInputData(polydata)
+    # normalGenerator.ComputePointNormalsOn()
+    # normalGenerator.ComputeCellNormalsOn()
+    # normalGenerator.SetSplitting(False)
+    # normalGenerator.Update()
+    # polydata = normalGenerator.GetOutput()
     # print(polydata.GetNumberOfPoints())
     # exit()
-
-    
-
 
 
     #Network parameter
