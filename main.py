@@ -37,11 +37,32 @@ def make_actor(polydata):
 if __name__ == "__main__":
 
 
+    #Read polydata
+    reader = vtk.vtkOBJReader()
+    reader.SetFileName('./data/test.obj')
+    reader.Update()
 
-    #Get Torch Network
-    # ncf = [64, 128, 256]
-    # ninput_edges 2280
+    polydata = reader.GetOutput()
+    print(polydata.GetNumberOfPoints())
+    #Copute normal
+    normalGenerator = vtk.vtkPolyDataNormals()
+    normalGenerator.SetInputData(polydata)
+    normalGenerator.ComputePointNormalsOn()
+    normalGenerator.ComputeCellNormalsOn()
+    normalGenerator.SetSplitting(False)
+    normalGenerator.Update()
 
+    polydata = normalGenerator.GetOutput()
+
+
+    # print(polydata.GetNumberOfPoints())
+    # exit()
+
+    
+
+
+
+    #Network parameter
     down_convs = [5, 64, 128, 256]
     up_convs = [256, 128, 64, 8]
     pool_res = [2250, 1350, 600]
@@ -52,7 +73,7 @@ if __name__ == "__main__":
     init_weights(net, 'normal', 0.02)
 
     #Import sample mesh
-    mesh = Mesh('./data/test.obj')
+    mesh = Mesh(polydata)
     mesh_feature = mesh.extract_features()
     
 
@@ -62,16 +83,14 @@ if __name__ == "__main__":
     y = net.forward(sample_input, [mesh])
 
     print(y.size())
-    
-    
-    
-    
-    exit() 
-    reader = vtk.vtkOBJReader()
-    reader.SetFileName('./data/test.obj')
-    reader.Update()
 
-    polydata = reader.GetOutput()
+
+    
+    exit()
+    
+    
+    
+    
     ############################################
     
     points = polydata.GetPoints()

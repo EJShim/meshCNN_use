@@ -3,12 +3,12 @@ import os
 import ntpath
 
 
-def fill_mesh(mesh2fill, file: str):
+def fill_mesh(mesh2fill, polydata):
     # load_path = get_mesh_path(file, opt.num_aug)
     # if os.path.exists(load_path):
     #     mesh_data = np.load(load_path, encoding='latin1', allow_pickle=True)
     # else:
-    mesh_data = from_scratch(file)
+    mesh_data = from_scratch(polydata)
     # np.savez_compressed(load_path, gemm_edges=mesh_data.gemm_edges, vs=mesh_data.vs, edges=mesh_data.edges,
     #                     edges_count=mesh_data.edges_count, ve=mesh_data.ve, v_mask=mesh_data.v_mask,
     #                     filename=mesh_data.filename, sides=mesh_data.sides,
@@ -36,7 +36,7 @@ def get_mesh_path(file: str, num_aug: int):
         os.makedirs(load_dir, exist_ok=True)
     return load_file
 
-def from_scratch(file):
+def from_scratch(polydata):
 
     class MeshPrep:
         def __getitem__(self, item):
@@ -51,9 +51,31 @@ def from_scratch(file):
     mesh_data.filename = 'unknown'
     mesh_data.edge_lengths = None
     mesh_data.edge_areas = []
-    mesh_data.vs, faces = fill_from_file(mesh_data, file)
+    # mesh_data.vs, faces = fill_from_file(mesh_data, file)
+
+    points = polydata.GetPoints()
+    numPoints = polydata.GetNumberOfPoints()
+    vs = []
+    for i in range(numPoints):
+        vs.append(polydata.GetPoint(i))
+    mesh_data.vs = np.array(vs)    
+
+    numFaces = polydata.GetNumberOfCells()
+    faces = []
+    face_areas = []
+    for i in range(numFaces):
+        cell = polydata.GetCell(i)        
+        face_areas.append(cell.ComputeArea())
+        faces.append([cell.GetPointId(0), cell.GetPointId(1), cell.GetPointId(2)])
+        
+
+    faces = np.array(faces)
+    face_areas = np.array(face_areas)
+
+    
+
     mesh_data.v_mask = np.ones(len(mesh_data.vs), dtype=bool)
-    faces, face_areas = remove_non_manifolds(mesh_data, faces)
+    # faces, face_areas = remove_non_manifolds(mesh_data, faces)
     # if opt.num_aug > 1:
     #     faces = augmentation(mesh_data, opt, faces)
     build_gemm(mesh_data, faces, face_areas)
