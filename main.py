@@ -19,18 +19,50 @@ iren.SetInteractorStyle(interactorStyle)
 iren.SetRenderWindow(renWin)
 
 
+def assign_prediction(polydata, predict):
+    #Make Lien Polydata
+
+    edgeExtractor = vtk.vtkExtractEdges()
+    edgeExtractor.SetInputData(polydata)
+    edgeExtractor.Update()
+
+    edgePoly = edgeExtractor.GetOutput()
+    
+    
+    #Assign Ground Truth
+    cellColor = vtk.vtkUnsignedCharArray()
+    cellColor.SetNumberOfComponents(1)
+    cellColor.SetNumberOfTuples(edgePoly.GetNumberOfCells())
+    cellColor.SetName("gt")
+
+    for i in range(edgePoly.GetNumberOfCells()):
+        #print(predict[i].item())
+        cellColor.SetTuple1(i, predict[i].item())
+    
+    edgePoly.GetCellData().SetScalars(cellColor)
+
+
+    return edgePoly
+
+
+    
+
+
 
 def make_actor(polydata):
     
     mapper = vtk.vtkPolyDataMapper()
     mapper.SetInputData(polydata)
-    # mapper.SetScalarRange([0.0, 15.0])
+    mapper.SetColorModeToMapScalars()
+    mapper.SetScalarRange([1.0, 8.0])
+
 
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
 
 
     return actor
+
 
 
 
@@ -43,44 +75,41 @@ if __name__ == "__main__":
     reader.Update()
 
     polydata = reader.GetOutput()
-    print(polydata.GetNumberOfPoints())
 
-    edgeExtractor = vtk.vtkExtractEdges()
-    edgeExtractor.SetInputData(polydata)
-    edgeExtractor.Update()
 
-    lines = edgeExtractor.GetOutput().GetLines()
-
-    print("Number of edges : ", lines.GetNumberOfCells())
-
-    
     #Network parameter
-    down_convs = [5, 64, 128, 256]
-    up_convs = [256, 128, 64, 8]
-    pool_res = [2250, 1350, 600]
+    down_convs = [5, 32, 64, 128, 256]
+    up_convs = [256, 128, 64, 32, 8]
+    pool_res = [2250, 1800, 1350, 600]
     resblocks =  3
     net = MeshEncoderDecoder(pool_res, down_convs, up_convs, resblocks)
-    init_weights(net, 'normal', 0.02)
+
+    #Try to get pretrained mesh
+    state_dict = torch.load('./data/latest_net.pth')
+    net.load_state_dict(state_dict)
+    net.eval()
 
     #Import sample mesh
     mesh = Mesh(polydata)
     mesh_feature = mesh.extract_features()
-    mesh_gemm = mesh.extract_gemm_edges()
-    print(mesh_gemm.shape)
-    
+    # mesh_gemm = mesh.extract_gemm_edges()
+    # print(mesh_gemm.shape)
+
 
     sample_input = torch.tensor(mesh_feature).unsqueeze(0).float()
     print(sample_input.size())
-    
     y = net.forward(sample_input, [mesh])
+    y_value, y_index = y.max(-2)
 
-    print(y.size())
+
+    #Get Predicted Class
+    predict = y_index[0]
+    print(predict.size())
 
 
-    
-
+    #Visualize
+    polydata = assign_prediction(polydata, predict)
     actor = make_actor(polydata)
-
 
     renderer.AddActor(actor)
     renWin.Render()

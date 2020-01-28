@@ -194,7 +194,7 @@ class MeshPool(nn.Module):
     @staticmethod
     def __union_groups(mesh, edge_groups, source, target):
         edge_groups.union(source, target)
-        mesh.union_groups(source, target)
+        #mesh.union_groups(source, target)
 
     @staticmethod
     def __remove_group(mesh, edge_groups, index):

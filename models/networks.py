@@ -191,7 +191,7 @@ class MeshEncoderDecoder(nn.Module):
         self.decoder = MeshDecoder(unrolls, up_convs, blocks=blocks, transfer_data=transfer_data)
 
     def forward(self, x, gemms):
-        fe, before_pool = self.encoder((x, gemms))
+        fe, before_pool = self.encoder((x, gemms))        
         fe = self.decoder((fe, gemms), before_pool)
         return fe
 
