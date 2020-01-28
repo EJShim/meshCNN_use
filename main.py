@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     #Read polydata
     reader = vtk.vtkOBJReader()
-    reader.SetFileName('./data/test.obj')
+    reader.SetFileName('./data/adobe__MaleFitA_tri_fixed.obj')
     reader.Update()
 
     polydata = reader.GetOutput()
@@ -70,8 +70,6 @@ if __name__ == "__main__":
     up_convs = [256, 128, 64, 8]
     pool_res = [2250, 1350, 600]
     resblocks =  3
-
-
     net = MeshEncoderDecoder(pool_res, down_convs, up_convs, resblocks)
     init_weights(net, 'normal', 0.02)
 
@@ -91,33 +89,7 @@ if __name__ == "__main__":
 
 
     
-    exit()
-    
-    
-    
-    
-    ############################################
-    
-    points = polydata.GetPoints()
-    vs = []
 
-    for i in range(points.GetNumberOfPoints()):
-        vs.append(polydata.GetPoint(i))
-
-    print(len(vs), vs[0])
-
-    polys = polydata.GetPolys()
-    faces = []
-    for i in range(polys.GetNumberOfCells()):
-        ids = []
-        pointids = polydata.GetCell(i).GetPointIds()
-        
-        faces.append(pointids)
-
-    print(len(faces), faces[0])
-    
-    
-    #######################################################
     actor = make_actor(polydata)
 
 
