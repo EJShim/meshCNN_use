@@ -53,18 +53,7 @@ if __name__ == "__main__":
 
     print("Number of edges : ", lines.GetNumberOfCells())
 
-    # #Copute normal
-    # normalGenerator = vtk.vtkPolyDataNormals()
-    # normalGenerator.SetInputData(polydata)
-    # normalGenerator.ComputePointNormalsOn()
-    # normalGenerator.ComputeCellNormalsOn()
-    # normalGenerator.SetSplitting(False)
-    # normalGenerator.Update()
-    # polydata = normalGenerator.GetOutput()
-    # print(polydata.GetNumberOfPoints())
-    # exit()
-
-
+    
     #Network parameter
     down_convs = [5, 64, 128, 256]
     up_convs = [256, 128, 64, 8]

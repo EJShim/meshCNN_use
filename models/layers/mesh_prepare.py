@@ -144,15 +144,19 @@ def build_gemm(mesh, faces, face_areas):
     mesh.ve = [[] for _ in mesh.vs]
     edge_nb = []
     sides = []
-    edge2key = dict()
+    edge2key = dict() #edge index?????
     edges = []
     edges_count = 0
     nb_count = []
     for face_id, face in enumerate(faces):
         faces_edges = []
+
+        #Get 3 face edges
         for i in range(3):
             cur_edge = (face[i], face[(i + 1) % 3])
             faces_edges.append(cur_edge)
+
+
         for idx, edge in enumerate(faces_edges):
             edge = tuple(sorted(list(edge)))
             faces_edges[idx] = edge
@@ -167,15 +171,21 @@ def build_gemm(mesh, faces, face_areas):
                 nb_count.append(0)
                 edges_count += 1
             mesh.edge_areas[edge2key[edge]] += face_areas[face_id] / 3
+
+
         for idx, edge in enumerate(faces_edges):
             edge_key = edge2key[edge]
             edge_nb[edge_key][nb_count[edge_key]] = edge2key[faces_edges[(idx + 1) % 3]]
             edge_nb[edge_key][nb_count[edge_key] + 1] = edge2key[faces_edges[(idx + 2) % 3]]
             nb_count[edge_key] += 2
+
+
         for idx, edge in enumerate(faces_edges):
             edge_key = edge2key[edge]
             sides[edge_key][nb_count[edge_key] - 2] = nb_count[edge2key[faces_edges[(idx + 1) % 3]]] - 1
             sides[edge_key][nb_count[edge_key] - 1] = nb_count[edge2key[faces_edges[(idx + 2) % 3]]] - 2
+
+
     mesh.edges = np.array(edges, dtype=np.int32)
     mesh.gemm_edges = np.array(edge_nb, dtype=np.int64)
     mesh.sides = np.array(sides, dtype=np.int64)
