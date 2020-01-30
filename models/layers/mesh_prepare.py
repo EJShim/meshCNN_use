@@ -2,9 +2,21 @@ import numpy as np
 import os
 import ntpath
 import vtk
+import math
 
 
 def fill_mesh(mesh, polydata):
+
+    
+    #Compute Normal
+    normalGenerator = vtk.vtkPolyDataNormals()
+    normalGenerator.SetInputData(polydata)
+    normalGenerator.ComputePointNormalsOff()
+    normalGenerator.ComputeCellNormalsOn()
+    normalGenerator.SplittingOff()
+    normalGenerator.Update()
+    polydata = normalGenerator.GetOutput()
+
 
     #Get VS and faces..
     points = polydata.GetPoints()
@@ -32,12 +44,17 @@ def fill_mesh(mesh, polydata):
         cell = polydata.GetCell(i)
         faces_edges = []
 
-        faces_edges.append( tuple(sorted([cell.GetPointId(0), cell.GetPointId(1)])) )
-        faces_edges.append( tuple(sorted([cell.GetPointId(0), cell.GetPointId(2)])) )
-        faces_edges.append( tuple(sorted([cell.GetPointId(1), cell.GetPointId(2)])) )
+        pointIds =  sorted([cell.GetPointId(0),cell.GetPointId(1), cell.GetPointId(2)])
 
+<<<<<<< HEAD
         # face_edges : [(7, 343), (7, 688), (343, 688)]
         
+=======
+        faces_edges.append( tuple([pointIds[0], pointIds[1]]) )
+        faces_edges.append( tuple([pointIds[0], pointIds[2]]) )
+        faces_edges.append( tuple([pointIds[1], pointIds[2]]) )
+
+>>>>>>> 273cdee495795e4d26438979e454ee11bb603345
         for edge in faces_edges:            
             if edge not in edge2key:
                 # edges2key = vertex 
@@ -128,6 +145,56 @@ def fill_mesh(mesh, polydata):
     #print((mesh.features).shape) #(5, 69823)
 
 
+    #############################################################################################
+    edgeData = dict()
+    for faceId in range(numFaces):
+        face = polydata.GetCell(faceId)
+        pointIds = sorted([face.GetPointId(0),face.GetPointId(1), face.GetPointId(2)])
+        #extract edges
+        edges = [
+            tuple([pointIds[0], pointIds[1]]),
+            tuple([pointIds[0], pointIds[2]]),
+            tuple([pointIds[1], pointIds[2]])
+        ]
+        #Append Edge!
+        for edge in edges:
+            if edge not in edgeData:
+                #define Edge [faceid, faceid]
+                edgeData[edge] = [faceId, -1]
+            else:
+                #Append Edge Information
+                edgeData[edge][1] = faceId
+
+
+    dihedral = []
+    normals = polydata.GetCellData().GetArray("Normals")
+    #for
+    for edge in edgeData:
+        faceIds = edgeData[edge]
+        
+        face0 = polydata.GetCell(faceIds[0])
+        face1 = polydata.GetCell(faceIds[1])
+
+        faceNormal0 = normals.GetTuple(faceIds[0])
+        faceNormal1 = normals.GetTuple(faceIds[1])
+
+        #Compute dihedral
+        angle = vtk.vtkMath.Dot(faceNormal0, faceNormal1)
+        if angle > 1.0 : angle = 1.0        
+        angle = vtk.vtkMath.Pi() - math.acos(angle)
+        dihedral.append(angle)
+    dihedral = np.array(dihedral)
+
+    
+        
+    print(mesh.features[0])
+    print(dihedral)
+
+    mesh.features[0] = dihedral
+            
+    #############################################################################################
+
+
 def extract_features(mesh):
     features = []
     edge_points = get_edge_points(mesh)
@@ -155,7 +222,8 @@ def dihedral_angle(mesh, edge_points):
     normals_a = get_normals(mesh, edge_points, 0)
     normals_b = get_normals(mesh, edge_points, 3)
     dot = np.sum(normals_a * normals_b, axis=1).clip(-1, 1)
-    angles = np.expand_dims(np.pi - np.arccos(dot), axis=0)
+    dot = np.pi - np.arccos(dot)
+    angles = np.expand_dims(dot, axis=0)
     return angles
 
 
