@@ -1,4 +1,5 @@
 import vtk
+import numpy as np
 import torch
 from models.networks import MeshEncoderDecoder, init_weights
 from models.layers.mesh import Mesh
@@ -54,7 +55,7 @@ def make_actor(polydata):
     mapper = vtk.vtkPolyDataMapper()
     mapper.SetInputData(polydata)
     mapper.SetColorModeToMapScalars()
-    mapper.SetScalarRange([1.0, 8.0])
+    mapper.SetScalarRange([0.0, 8.0])
 
 
     actor = vtk.vtkActor()
@@ -62,9 +63,6 @@ def make_actor(polydata):
 
 
     return actor
-
-
-
 
 if __name__ == "__main__":
 
@@ -92,6 +90,7 @@ if __name__ == "__main__":
     #Import sample mesh
     mesh = Mesh(polydata)
     mesh_feature = mesh.extract_features()
+
     # mesh_gemm = mesh.extract_gemm_edges()
     # print(mesh_gemm.shape)
 
@@ -105,6 +104,8 @@ if __name__ == "__main__":
     #Get Predicted Class
     predict = y_index[0]
     print(predict.size())
+
+
 
 
     #Visualize
