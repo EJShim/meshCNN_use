@@ -16,4 +16,5 @@ Mesh() 에 vtkpolydata 를 parameter 로 받게는 했음
 
 *preprocessing.py 에서 input feature 를 뽑아내는 코드를 다시 작성중
     - iteration 을 face 단위로 도는 것이 좋을지 edge 단위로 도는 것이 좋을지... 
+        - vtkExtractEdges 를 사용해서 edge 단위로 iteration 돌려고 했더니.. point ordering 이 달라져있어서 제대로 안됨..
     - 속도도 중요하지만 코드를 최대한 직관적으로 짜서  c++ 에 이식하기 쉽도록 만들지

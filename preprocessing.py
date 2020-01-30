@@ -1,4 +1,6 @@
 import vtk
+import math
+import numpy as np
 
 
 # Renderer
@@ -33,6 +35,23 @@ def make_actor(polydata):
     return actor
 
 
+def findNBFaces(polydata, edge):
+    result = []
+
+
+    #Face-based Processing
+    numFaces = polydata.GetNumberOfCells()
+    #normals = polydata.GetCellData().GetArray("Normals")
+
+    for faceId in range(numFaces):
+        face = polydata.GetCell(faceId)
+        pointIds = [face.GetPointId(0),face.GetPointId(1), face.GetPointId(2)]
+
+        if edge[0] in pointIds and edge[1] in pointIds:
+            result.append(faceId)
+
+    return result
+
 if __name__ == "__main__":
     #Read polydata
     reader = vtk.vtkOBJReader()
@@ -49,35 +68,64 @@ if __name__ == "__main__":
     normalGenerator.Update()
     polydata = normalGenerator.GetOutput()
 
-
-
-
+    
     #Face-based Processing
     numFaces = polydata.GetNumberOfCells()
+
+    #Initialize Edge with face iterations
+    edgeData = dict()
+    for faceId in range(numFaces):
+        face = polydata.GetCell(faceId)
+        pointIds = sorted([face.GetPointId(0),face.GetPointId(1), face.GetPointId(2)])
+        #extract edges
+        edges = [
+            tuple([pointIds[0], pointIds[1]]),
+            tuple([pointIds[0], pointIds[2]]),
+            tuple([pointIds[1], pointIds[2]])
+        ]
+        #Append Edge!
+        for edge in edges:
+            if edge not in edgeData:
+                #define Edge [faceid, faceid]
+                edgeData[edge] = [faceId, -1]
+            else:
+                #Append Edge Information
+                edgeData[edge][1] = faceId
+
+
+    dihedral = []
     normals = polydata.GetCellData().GetArray("Normals")
+    #for
+    for edge in edgeData:
+        faceIds = edgeData[edge]
+        
+        face0 = polydata.GetCell(faceIds[0])
+        face1 = polydata.GetCell(faceIds[1])
 
-    for idx in range(numFaces):
-        face = polydata.GetCell(idx)
+        faceNormal0 = normals.GetTuple(faceIds[0])
+        faceNormal1 = normals.GetTuple(faceIds[1])
 
-        faceIds = [face.GetPointId(0),face.GetPointId(1), face.GetPointId(2)]
-        print(normals.GetTuple(idx), faceIds)
+        #Compute dihedral
+        angle = vtk.vtkMath.Dot(faceNormal0, faceNormal1)
+        if angle > 1.0 : angle = 1.0        
+        angle = vtk.vtkMath.Pi() - math.acos(angle)
+        dihedral.append(angle)
+
+
+
+        print(face0.GetPointId(0), face0.GetPointId(1))
+
+
+    dihedral = np.array(dihedral)
+
+
+    print(dihedral)
+
+        
 
 
 
 
-    #Edge-based processing
-    edgeGenerator = vtk.vtkExtractEdges()
-    edgeGenerator.SetInputData(polydata)
-    edgeGenerator.Update()
-
-    edgePolyData = edgeGenerator.GetOutput()
-    numEdges = edgePolyData.GetNumberOfCells()
-
-    for idx in range(numEdges):
-        edge = edgePolyData.GetCell(idx)
-
-        edgeIds = [edge.GetPointId(0), edge.GetPointId(1)]
-        print(edgeIds)
 
 
     
