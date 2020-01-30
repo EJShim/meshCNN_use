@@ -1,4 +1,6 @@
 import vtk
+from random import randint
+from numpy.random import randint
 
 
 # Renderer
@@ -65,6 +67,7 @@ if __name__ == "__main__":
     #Read polydata
     reader = vtk.vtkOBJReader()
     reader.SetFileName('./data/adobe__MaleFitA_tri_fixed.obj')
+    #reader.SetFileName('C:/Users/TS/Downloads/11-alienanimal_obj/Alien Animal.obj')    
     reader.Update()
     polydata = reader.GetOutput()
 
@@ -74,8 +77,9 @@ if __name__ == "__main__":
 
     edgePoly = edgeExtractor.GetOutput()
     #read groundtruth
-    groundtruth = read_gt('./data/adobe__MaleFitA_tri_fixed.eseg')
-
+    #groundtruth = read_gt('./data/adobe__MaleFitA_tri_fixed.eseg') # 2250 length list
+    groundtruth = randint(0,10,1378443)
+    print(groundtruth)
     edgePoly = assign_gt(edgePoly, groundtruth)
     
     actor = make_actor(edgePoly)

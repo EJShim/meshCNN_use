@@ -2,6 +2,7 @@ import vtk
 import torch
 from models.networks import MeshEncoderDecoder, init_weights
 from models.layers.mesh import Mesh
+import numpy as np
 
 # Renderer
 renderer = vtk.vtkRenderer()
@@ -71,7 +72,10 @@ if __name__ == "__main__":
 
     #Read polydata
     reader = vtk.vtkOBJReader()
-    reader.SetFileName('./data/adobe__MaleFitA_tri_fixed.obj')
+    FileName = './data/Alien Animal_ver4.obj'
+    #FileName = './data/adobe__MaleFitA_tri_fixed.obj'
+    reader.SetFileName(FileName)
+    print("======= READ ", FileName, " =======")
     reader.Update()
 
     polydata = reader.GetOutput()
@@ -85,26 +89,28 @@ if __name__ == "__main__":
     net = MeshEncoderDecoder(pool_res, down_convs, up_convs, resblocks)
 
     #Try to get pretrained mesh
-    state_dict = torch.load('./data/latest_net.pth')
-    net.load_state_dict(state_dict)
-    net.eval()
+    # state_dict = torch.load('./data/latest_net.pth')
+    # net.load_state_dict(state_dict)
+    # net.eval()
 
     #Import sample mesh
     mesh = Mesh(polydata)
     mesh_feature = mesh.extract_features()
+    print(" mesh feature is done : ", mesh_feature.shape) #(5, 69823))
+
     # mesh_gemm = mesh.extract_gemm_edges()
     # print(mesh_gemm.shape)
 
 
     sample_input = torch.tensor(mesh_feature).unsqueeze(0).float()
-    print(sample_input.size())
+    print("sample input : ", sample_input.size()) #torch.Size([1, 5, 69823)])
     y = net.forward(sample_input, [mesh])
     y_value, y_index = y.max(-2)
 
 
     #Get Predicted Class
     predict = y_index[0]
-    print(predict.size())
+    #print(predict.size()) #torch.Size([2250])
 
 
     #Visualize

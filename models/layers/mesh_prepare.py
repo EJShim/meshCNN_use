@@ -30,46 +30,92 @@ def fill_mesh(mesh, polydata):
     #do not like this....
     for i in range(numFaces):
         cell = polydata.GetCell(i)
-
         faces_edges = []
 
         faces_edges.append( tuple(sorted([cell.GetPointId(0), cell.GetPointId(1)])) )
         faces_edges.append( tuple(sorted([cell.GetPointId(0), cell.GetPointId(2)])) )
         faces_edges.append( tuple(sorted([cell.GetPointId(1), cell.GetPointId(2)])) )
 
-
+        # face_edges : [(7, 343), (7, 688), (343, 688)]
+        
         for edge in faces_edges:            
             if edge not in edge2key:
-                edge2key[edge] = edges_count
-                edges.append(edge)
+                # edges2key = vertex 
+                edge2key[edge] = edges_count # {(7, 343): 0}
+                edges.append(edge) # [(7, 343)]
                 edge_nb.append([-1, -1, -1, -1])
                 sides.append([-1, -1, -1, -1])
                 mesh.ve[edge[0]].append(edges_count)
                 mesh.ve[edge[1]].append(edges_count)
                 nb_count.append(0)
                 edges_count += 1
-
-
+        # 7 위치에 (0,1) , 343 위치에 (0,2), 688 위치에 (1,2)
+        # 즉, 0이라는 edge는 (7,343) 1이라는 edge는 (7,686) 이런식이다.
+        # 여기서 0,1,2, .. 이런걸 edge_key라고 부른다.
+        
+        
         for idx, edge in enumerate(faces_edges):
-            edge_key = edge2key[edge]
+            
+            edge_key = edge2key[edge]  
+            # edge : (7, 343), edge2key : {(7, 343): 0, (7, 688): 1, (343, 688): 2},  edges_key = 0
             edge_nb[edge_key][nb_count[edge_key]] = edge2key[faces_edges[(idx + 1) % 3]]
             edge_nb[edge_key][nb_count[edge_key] + 1] = edge2key[faces_edges[(idx + 2) % 3]]
             nb_count[edge_key] += 2
-
-
+        
+                 
+            """
+            edge의 고유 넘버를 가지고 접근해서 차례대로 edge_nb 에 같은 face에 있던 edge의 고유 넘버 추가하기
+            [[1, 2, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]]
+            [[1, 2, -1, -1], [2, 0, -1, -1], [-1, -1, -1, -1]]
+            [[1, 2, -1, -1], [2, 0, -1, -1], [0, 1, -1, -1]]
+            """
+        #print(edge, edge2key, edge_key)
         for idx, edge in enumerate(faces_edges):
             edge_key = edge2key[edge]
             sides[edge_key][nb_count[edge_key] - 2] = nb_count[edge2key[faces_edges[(idx + 1) % 3]]] - 1
             sides[edge_key][nb_count[edge_key] - 1] = nb_count[edge2key[faces_edges[(idx + 2) % 3]]] - 2
-        
 
+            """
+            [[1, 0, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]]
+            [[1, 0, -1, -1], [1, 0, -1, -1], [-1, -1, -1, -1]]
+            [[1, 0, -1, -1], [1, 0, -1, -1], [1, 0, -1, -1]]
+            """
+            
+            """
+            원래 코드에서 def build_gemm 함수 참고
+            gemm_edges: array (#E x 4) of the 4 one-ring neighbors for each edge
+            sides: array (#E x 4) indices (values of: 0,1,2,3) indicating where an edge is in the gemm_edge entry of the 4 neighboring edges
+            for example edge i -> gemm_edges[gemm_edges[i], sides[i]] == [i, i, i, i]
+            """
+        
+        
 
 
     mesh.edges = np.array(edges, dtype=np.int32)
     mesh.gemm_edges = np.array(edge_nb, dtype=np.int64)
     mesh.sides = np.array(sides, dtype=np.int64)
     mesh.edges_count = edges_count
+    """
+    for i in range(len(edge_nb)):
+        print(edge_nb[i])
+    exit()
+    """
 
+    """
+    #이해를 돕고자 쓴 코드
+    print("edge : ", mesh.edges[0]) # edge :  [  7 343]
+    print("gemm : ", mesh.gemm_edges[0]) # gemm :  [  1   2 488  26]
+    print("side : ", mesh.sides[0]) # side :  [1 0 1 2]
+    print("edge_count : ", mesh.edges_count) # 2250
+    print(mesh.gemm_edges[mesh.gemm_edges[0], mesh.sides[0]]) # [0 0 0 0]
+    
+    print(mesh.gemm_edges[1]) # [   2    0 1660 1659]
+    print(mesh.gemm_edges[2]) # [   0    1 1551 1257]
+    print(mesh.gemm_edges[488]) # [ 26   0 846 845]
+    print(mesh.gemm_edges[26]) # [ 27  25   0 488]
+
+    exit()
+    """
 
     #Below is the importatnt
     mesh.v_mask = np.ones(len(mesh.vs), dtype=bool)
@@ -77,6 +123,9 @@ def fill_mesh(mesh, polydata):
     
     #Try
     mesh.features = extract_features(mesh)
+    
+    ## 추가
+    #print((mesh.features).shape) #(5, 69823)
 
 
 def extract_features(mesh):
@@ -96,7 +145,8 @@ def extract_features(mesh):
     symmetric_ratios_feature = symmetric_ratios(mesh, edge_points)
     features.append(symmetric_ratios_feature)
 
-
+    ## 추가
+    # print(np.concatenate(features,axis=0).shape) #(5, 137844)
 
     return np.concatenate(features, axis=0)
 

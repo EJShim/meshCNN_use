@@ -302,27 +302,27 @@ class MeshEncoder(nn.Module):
                 pool = 0
             self.convs.append(DownConv(convs[i], convs[i + 1], blocks=blocks, pool=pool))
         self.global_pool = None
-        if fcs is not None:
-            self.fcs = []
-            self.fcs_bn = []
-            last_length = convs[-1]
-            if global_pool is not None:
-                if global_pool == 'max':
-                    self.global_pool = nn.MaxPool1d(pools[-1])
-                elif global_pool == 'avg':
-                    self.global_pool = nn.AvgPool1d(pools[-1])
-                else:
-                    assert False, 'global_pool %s is not defined' % global_pool
-            else:
-                last_length *= pools[-1]
-            if fcs[0] == last_length:
-                fcs = fcs[1:]
-            for length in fcs:
-                self.fcs.append(nn.Linear(last_length, length))
-                self.fcs_bn.append(nn.InstanceNorm1d(length))
-                last_length = length
-            self.fcs = nn.ModuleList(self.fcs)
-            self.fcs_bn = nn.ModuleList(self.fcs_bn)
+        # if fcs is not None:
+        #     self.fcs = []
+        #     self.fcs_bn = []
+        #     last_length = convs[-1]
+        #     if global_pool is not None:
+        #         if global_pool == 'max':
+        #             self.global_pool = nn.MaxPool1d(pools[-1])
+        #         elif global_pool == 'avg':
+        #             self.global_pool = nn.AvgPool1d(pools[-1])
+        #         else:
+        #             assert False, 'global_pool %s is not defined' % global_pool
+        #     else:
+        #         last_length *= pools[-1]
+        #     if fcs[0] == last_length:
+        #         fcs = fcs[1:]
+        #     for length in fcs:
+        #         self.fcs.append(nn.Linear(last_length, length))
+        #         self.fcs_bn.append(nn.InstanceNorm1d(length))
+        #         last_length = length
+        #     self.fcs = nn.ModuleList(self.fcs)
+        #     self.fcs_bn = nn.ModuleList(self.fcs_bn)
         self.convs = nn.ModuleList(self.convs)
         reset_params(self)
 
