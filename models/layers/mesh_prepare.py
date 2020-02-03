@@ -5,6 +5,46 @@ import vtk
 import math
 
 
+def compute_feature_mtrl(polydata, face, edge, edgeData):
+
+    #Get point coordinates of each face
+    facePointIndex = [face.GetPointId(0), face.GetPointId(1), face.GetPointId(2)]
+    
+    for edgeSide, pointIndex in enumerate(facePointIndex) : 
+        if pointIndex == edge[0]:
+            pointPositionA = list(polydata.GetPoint(facePointIndex[edgeSide]))
+
+        elif pointIndex == edge[1]:
+            pointPositionB = list(polydata.GetPoint(facePointIndex[edgeSide]))
+
+        else :
+            pointPositionO = list(polydata.GetPoint(facePointIndex[edgeSide]))
+
+    
+    edge_OA = np.subtract(pointPositionO, pointPositionA)
+    edge_OB = np.subtract(pointPositionO, pointPositionB)
+    edge_AB = np.subtract(pointPositionA, pointPositionB)
+    
+    #Unit vector
+    edge_OA_u = edge_OA / np.linalg.norm(edge_OA, ord=2)
+    edge_OB_u = edge_OB / np.linalg.norm(edge_OB, ord=2)
+    edge_AB_u = edge_AB / np.linalg.norm(edge_AB, ord=2)
+
+    #Get symmetric opposite angles
+    angle_AOB = np.arccos(np.clip(np.dot(edge_OA_u, edge_OB_u),-1, 1))
+    
+    #Get symmetric ratios
+    edge_AB_length = np.linalg.norm(edge_AB, ord=2)
+    projection_length = np.sum(edge_AB * edge_OA) / edge_AB_length
+    trans_length = (projection_length /edge_AB_length) * edge_AB_length
+    closest_point = pointPositionA + trans_length * edge_AB_u
+    d = np.linalg.norm(pointPositionO - closest_point, ord=2)
+    symmetric_ratio = d / edge_AB_length
+
+    return angle_AOB , symmetric_ratio
+  
+
+
 def fill_mesh(mesh, polydata):
 
     
@@ -46,15 +86,10 @@ def fill_mesh(mesh, polydata):
 
         pointIds =  sorted([cell.GetPointId(0),cell.GetPointId(1), cell.GetPointId(2)])
 
-<<<<<<< HEAD
-        # face_edges : [(7, 343), (7, 688), (343, 688)]
-        
-=======
         faces_edges.append( tuple([pointIds[0], pointIds[1]]) )
         faces_edges.append( tuple([pointIds[0], pointIds[2]]) )
         faces_edges.append( tuple([pointIds[1], pointIds[2]]) )
 
->>>>>>> 273cdee495795e4d26438979e454ee11bb603345
         for edge in faces_edges:            
             if edge not in edge2key:
                 # edges2key = vertex 
@@ -82,6 +117,7 @@ def fill_mesh(mesh, polydata):
                  
             """
             edge의 고유 넘버를 가지고 접근해서 차례대로 edge_nb 에 같은 face에 있던 edge의 고유 넘버 추가하기
+            print(edge_nb)
             [[1, 2, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]]
             [[1, 2, -1, -1], [2, 0, -1, -1], [-1, -1, -1, -1]]
             [[1, 2, -1, -1], [2, 0, -1, -1], [0, 1, -1, -1]]
@@ -93,6 +129,7 @@ def fill_mesh(mesh, polydata):
             sides[edge_key][nb_count[edge_key] - 1] = nb_count[edge2key[faces_edges[(idx + 2) % 3]]] - 2
 
             """
+            print(sides)
             [[1, 0, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]]
             [[1, 0, -1, -1], [1, 0, -1, -1], [-1, -1, -1, -1]]
             [[1, 0, -1, -1], [1, 0, -1, -1], [1, 0, -1, -1]]
@@ -112,14 +149,8 @@ def fill_mesh(mesh, polydata):
     mesh.gemm_edges = np.array(edge_nb, dtype=np.int64)
     mesh.sides = np.array(sides, dtype=np.int64)
     mesh.edges_count = edges_count
-    """
-    for i in range(len(edge_nb)):
-        print(edge_nb[i])
-    exit()
-    """
 
     """
-    #이해를 돕고자 쓴 코드
     print("edge : ", mesh.edges[0]) # edge :  [  7 343]
     print("gemm : ", mesh.gemm_edges[0]) # gemm :  [  1   2 488  26]
     print("side : ", mesh.sides[0]) # side :  [1 0 1 2]
@@ -139,13 +170,14 @@ def fill_mesh(mesh, polydata):
     
     
     #Try
-    mesh.features = extract_features(mesh)
-    
+    #mesh.features = extract_features(mesh)
+    #mesh.features = []
     ## 추가
     #print((mesh.features).shape) #(5, 69823)
 
 
     #############################################################################################
+    
     edgeData = dict()
     for faceId in range(numFaces):
         face = polydata.GetCell(faceId)
@@ -156,6 +188,7 @@ def fill_mesh(mesh, polydata):
             tuple([pointIds[0], pointIds[2]]),
             tuple([pointIds[1], pointIds[2]])
         ]
+
         #Append Edge!
         for edge in edges:
             if edge not in edgeData:
@@ -165,17 +198,24 @@ def fill_mesh(mesh, polydata):
                 #Append Edge Information
                 edgeData[edge][1] = faceId
 
+    # print(len(edgeData)) # 2250
 
     dihedral = []
+    innerAngles = []
+    ratios = []
     normals = polydata.GetCellData().GetArray("Normals")
     #for
-    for edge in edgeData:
-        faceIds = edgeData[edge]
+    for edge in edgeData: 
         
-        face0 = polydata.GetCell(faceIds[0])
-        face1 = polydata.GetCell(faceIds[1])
+        faceIds = edgeData[edge]
 
-        faceNormal0 = normals.GetTuple(faceIds[0])
+        face0 = polydata.GetCell(faceIds[0])
+        innerAngle0, ratio0= compute_feature_mtrl(polydata, face0, edge, edgeData)
+
+        face1 = polydata.GetCell(faceIds[1])
+        innerAngle1, ratio1= compute_feature_mtrl(polydata, face1, edge, edgeData)
+
+        faceNormal0 = normals.GetTuple(faceIds[0]) 
         faceNormal1 = normals.GetTuple(faceIds[1])
 
         #Compute dihedral
@@ -183,14 +223,47 @@ def fill_mesh(mesh, polydata):
         if angle > 1.0 : angle = 1.0        
         angle = vtk.vtkMath.Pi() - math.acos(angle)
         dihedral.append(angle)
+
+        #Compute two inner angles
+        innerAngle = np.concatenate((np.expand_dims(innerAngle0, 0), np.expand_dims(innerAngle1, 0)), axis=0)
+        innerAngle = np.sort(innerAngle, axis=0)
+        innerAngles.append(innerAngle)
+
+        #Compute two length ratio
+        ratio_ = np.concatenate((np.expand_dims(ratio0, 0), np.expand_dims(ratio1, 0)), axis=0)
+        ratio_ = np.sort(ratio_, axis=0)
+        ratios.append(ratio_)
+
+
     dihedral = np.array(dihedral)
+    innerAngles = np.array(innerAngles)
+    ratios = np.array(ratios)
+    #np.concatenate(features, axis=0)
 
+    # print("original dihedral : ", mesh.features[0])
+    # print("symmetric opposite angle : ", mesh.features[1])
+    # print("symmetric opposite angle : ", mesh.features[2])
+    # print("symmetric ratios of length : ", mesh.features[3])
+    # print("symmetric ratios of length : ", mesh.features[4])
+
+    #Summarize input features
+    features = []
+    for extractor in [dihedral, innerAngles[:,0], innerAngles[:,1], ratios[:,0], ratios[:,1]]:
+        features.append(extractor)
     
-        
-    print(mesh.features[0])
-    print(dihedral)
+    np.concatenate(features, axis=0)
 
-    mesh.features[0] = dihedral
+    mesh.features = features
+    
+    print((features[0]))
+    print((features[1]))
+    print((features[2]))
+    print((features[3]))
+    print((features[4]))
+    print((np.array(features).shape))
+    # exit()
+
+    # mesh.features[0] = dihedral
             
     #############################################################################################
 

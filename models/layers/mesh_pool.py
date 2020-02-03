@@ -57,9 +57,8 @@ class MeshPool(nn.Module):
         while mesh.edges_count > self.__out_target: # 1800
 
             value, edge_id = heappop(queue)
-            print(len(queue))
-            exit()
-            print(count,mesh.edges_count,value, edge_id, "\n")
+            # exit()
+            #print(count,mesh.edges_count,value, edge_id, "\n")
             count += 1 #
             edge_id = int(edge_id)
             if mask[edge_id]:
@@ -68,7 +67,7 @@ class MeshPool(nn.Module):
         mesh.clean(mask, edge_groups)
         fe = edge_groups.rebuild_features(self.__fe[mesh_index], mask, self.__out_target)
         self.__updated_fe[mesh_index] = fe
-        exit() #
+        #exit() #
 
     def __pool_edge(self, mesh, edge_id, mask, edge_groups):
         if self.has_boundaries(mesh, edge_id):

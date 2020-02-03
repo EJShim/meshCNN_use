@@ -70,8 +70,8 @@ if __name__ == "__main__":
 
     #Read polydata
     reader = vtk.vtkOBJReader()
-    FileName = './data/Alien Animal_ver4.obj'
-    #FileName = './data/adobe__MaleFitA_tri_fixed.obj'
+    #FileName = './data/Alien Animal_ver4.obj'
+    FileName = './data/adobe__MaleFitA_tri_fixed.obj'
     reader.SetFileName(FileName)
     print("======= READ ", FileName, " =======")
     reader.Update()
@@ -87,9 +87,9 @@ if __name__ == "__main__":
     net = MeshEncoderDecoder(pool_res, down_convs, up_convs, resblocks)
 
     #Try to get pretrained mesh
-    # state_dict = torch.load('./data/latest_net.pth')
-    # net.load_state_dict(state_dict)
-    # net.eval()
+    state_dict = torch.load('./data/latest_net.pth')
+    net.load_state_dict(state_dict)
+    net.eval()
 
     #Import sample mesh
     mesh = Mesh(polydata)
